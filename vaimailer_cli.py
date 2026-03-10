@@ -742,20 +742,29 @@ class VisionAIMailerUI:
 # ── Install helper ────────────────────────────────────────────────────────────
 
 def _install():
+    import tempfile
     script = os.path.abspath(__file__)
     link   = "/usr/local/bin/vaimailer"
     try:
-        # Remove any existing file or symlink at the target path FIRST.
-        # Without this, if a stale symlink points back to this .py file,
-        # open() would follow it and overwrite the source file with the
-        # wrapper text — destroying the Python script.
-        if os.path.lexists(link):
-            os.unlink(link)
-        # Write a plain shell wrapper — always LF, immune to CRLF in the .py file.
         wrapper = f"#!/bin/sh\nexec python3 {script} \"$@\"\n"
-        with open(link, 'w', newline='\n') as f:
-            f.write(wrapper)
-        os.chmod(link, 0o755)
+        # Write to a temp file in /tmp FIRST — never open the destination path
+        # directly because it may be a stale symlink pointing back to this .py
+        # file, which would cause open() to overwrite the source script.
+        fd, tmp_path = tempfile.mkstemp(prefix='vaimailer_', suffix='.sh', dir='/tmp')
+        try:
+            with os.fdopen(fd, 'w', newline='\n') as f:
+                f.write(wrapper)
+            os.chmod(tmp_path, 0o755)
+            # Remove whatever is at the destination (file, symlink, etc.)
+            if os.path.lexists(link):
+                os.unlink(link)
+            shutil.move(tmp_path, link)
+        except Exception:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            raise
         print("\033[32m")
         print("  \u2714  Installation successful!")
         print("\033[0m")
