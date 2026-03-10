@@ -182,7 +182,10 @@ class VisionAIMailerUI:
         curses.init_pair(_C_DISABLED, curses.COLOR_WHITE,  curses.COLOR_RED)
         curses.init_pair(_C_SELECTED, curses.COLOR_BLACK,  curses.COLOR_CYAN)
         curses.init_pair(_C_WARN,     curses.COLOR_YELLOW, -1)
-        curses.init_pair(_C_DIM,      8,                   -1)
+        # Color 8 (dark grey) only exists on 256-colour terminals; fall back to
+        # default foreground (-1) on 8-colour terminals like some SSH sessions.
+        _dim_fg = 8 if curses.COLORS > 8 else -1
+        curses.init_pair(_C_DIM,      _dim_fg,             -1)
         curses.init_pair(_C_TITLE,    curses.COLOR_WHITE,  curses.COLOR_BLUE)
         curses.init_pair(_C_NORMAL,   curses.COLOR_WHITE,  -1)
 
