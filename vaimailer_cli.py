@@ -745,10 +745,13 @@ def _install():
     script = os.path.abspath(__file__)
     link   = "/usr/local/bin/vaimailer"
     try:
+        # Remove any existing file or symlink at the target path FIRST.
+        # Without this, if a stale symlink points back to this .py file,
+        # open() would follow it and overwrite the source file with the
+        # wrapper text — destroying the Python script.
+        if os.path.lexists(link):
+            os.unlink(link)
         # Write a plain shell wrapper — always LF, immune to CRLF in the .py file.
-        # This is more reliable than a symlink because the shell reads the shebang
-        # of the target file directly when following a symlink, which breaks if the
-        # .py file was transferred from Windows with CRLF line endings.
         wrapper = f"#!/bin/sh\nexec python3 {script} \"$@\"\n"
         with open(link, 'w', newline='\n') as f:
             f.write(wrapper)
