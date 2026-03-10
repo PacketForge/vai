@@ -745,31 +745,26 @@ def _install():
     script = os.path.abspath(__file__)
     link   = "/usr/local/bin/vaimailer"
     try:
-        # Strip Windows CRLF line endings so the shebang works on Linux
-        with open(script, 'rb') as f:
-            raw = f.read()
-        cleaned = raw.replace(b'\r\n', b'\n').replace(b'\r', b'\n')
-        if cleaned != raw:
-            with open(script, 'wb') as f:
-                f.write(cleaned)
-            print("  (Converted Windows line endings to Unix LF)")
-
-        os.chmod(script, 0o755)
-        if os.path.islink(link) or os.path.exists(link):
-            os.remove(link)
-        os.symlink(script, link)
+        # Write a plain shell wrapper — always LF, immune to CRLF in the .py file.
+        # This is more reliable than a symlink because the shell reads the shebang
+        # of the target file directly when following a symlink, which breaks if the
+        # .py file was transferred from Windows with CRLF line endings.
+        wrapper = f"#!/bin/sh\nexec python3 {script} \"$@\"\n"
+        with open(link, 'w', newline='\n') as f:
+            f.write(wrapper)
+        os.chmod(link, 0o755)
         print("\033[32m")
-        print("  ✔  Installation successful!")
+        print("  \u2714  Installation successful!")
         print("\033[0m")
         print(f"  Command  :  vaimailer")
         print(f"  Points to:  {script}")
         print()
         print("  You can now run \033[1mvaimailer\033[0m from any terminal on this server.")
     except PermissionError:
-        print("\033[31m  ✖  Permission denied.\033[0m  Run with sudo:")
+        print("\033[31m  \u2716  Permission denied.\033[0m  Run with sudo:")
         print(f"     sudo python3 {script} --install")
     except Exception as ex:
-        print(f"\033[31m  ✖  Install failed: {ex}\033[0m")
+        print(f"\033[31m  \u2716  Install failed: {ex}\033[0m")
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
