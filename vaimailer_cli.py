@@ -745,6 +745,15 @@ def _install():
     script = os.path.abspath(__file__)
     link   = "/usr/local/bin/vaimailer"
     try:
+        # Strip Windows CRLF line endings so the shebang works on Linux
+        with open(script, 'rb') as f:
+            raw = f.read()
+        cleaned = raw.replace(b'\r\n', b'\n').replace(b'\r', b'\n')
+        if cleaned != raw:
+            with open(script, 'wb') as f:
+                f.write(cleaned)
+            print("  (Converted Windows line endings to Unix LF)")
+
         os.chmod(script, 0o755)
         if os.path.islink(link) or os.path.exists(link):
             os.remove(link)
